@@ -1,13 +1,20 @@
+import warnings
+warnings.simplefilter(action='ignore')
 
 import numpy as np
 import pandas as pd
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import glob
 
 import pydicom
 
 from matplotlib import cm
 from matplotlib import pyplot as plt
+
+
+warnings.filterwarnings("ignore",category=DeprecationWarning)
+
 
 
 from keras.models import Model
@@ -24,8 +31,6 @@ import sys
 
 from mask_functions import rle2mask
 
-import warnings
-warnings.filterwarnings("ignore")
 
 def show_dcm_info(dataset):
     print("Filename.........:", file_path)
@@ -49,6 +54,8 @@ def show_dcm_info(dataset):
             rows=rows, cols=cols, size=len(dataset.PixelData)))
         if 'PixelSpacing' in dataset:
             print("Pixel spacing....:", dataset.PixelSpacing)
+
+    tf.test.is_gpu_available()
 
 def plot_pixel_array(dataset, figsize=(10,10)):
     plt.figure(figsize=figsize)
@@ -104,27 +111,27 @@ X_train = np.zeros((len(train_fns), im_height, im_width, im_chan), dtype=np.uint
 Y_train = np.zeros((len(train_fns), im_height, im_width, 1), dtype=np.bool)
 print('Getting train images and masks ... ')
 sys.stdout.flush()
+
 for n, _id in tqdm_notebook(enumerate(train_fns), total=len(train_fns)):
+    _id = _id.replace('\\','/')
     dataset = pydicom.read_file(_id)
-    str = _id.split('/')[1].split('\\')[-1][:-4]
-    print(_id.split('/')[1].split('\\')[-1][:-4])
     X_train[n] = np.expand_dims(dataset.pixel_array, axis=2)
     try:
-        if '-1' in df_full.loc[(_id.split('/')[1].split('\\')[-1][:-4]),' EncodedPixels']:
+        if '-1' in df_full.loc[_id.split('/')[-1][:-4],' EncodedPixels']:
             Y_train[n] = np.zeros((1024, 1024, 1))
-
+            
         else:
-            if type(df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels']) == str:
-                Y_train[n] = np.expand_dims(rle2mask(df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels'], 1024, 1024), axis=2)
+            if type(df_full.loc[_id.split('/')[-1][:-4],' EncodedPixels']) == str:
+                Y_train[n] = np.expand_dims(rle2mask(df_full.loc[_id.split('/')[-1][:-4],' EncodedPixels'], 1024, 1024), axis=2)
+                
             else:
                 Y_train[n] = np.zeros((1024, 1024, 1))
-                for x in (df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels']):
-                	print([_id.split('/')[1].split('\\')[-1][:-4]])
-                	print(x)
-                	print(n)
+                
+                for x in (df_full.loc[_id.split('/')[-1][:-4],' EncodedPixels']):
                 	Y_train[n] =  Y_train[n] + np.expand_dims(rle2mask(x, 1024, 1024), axis=2)
+                	
     except KeyError:
-        print(f"Key {str} without mask, assuming healthy patient.")
+        print(f"Key {_id.split('/')[-1][:-4]} without mask, assuming healthy patient.")
         Y_train[n] = np.zeros((1024, 1024, 1)) # Assume missing masks are empty masks.
 
 print('Done!')
@@ -140,7 +147,7 @@ def dice_coef(y_true, y_pred, smooth=1):
     intersection = K.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
-    inputs = Input((None, None, im_chan))
+inputs = Input((None, None, im_chan))
 
 c1 = Conv2D(8, (3, 3), activation='relu', padding='same') (inputs)
 c1 = Conv2D(8, (3, 3), activation='relu', padding='same') (c1)
