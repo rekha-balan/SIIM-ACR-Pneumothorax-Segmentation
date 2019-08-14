@@ -1,6 +1,6 @@
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np
+import pandas as pd
 import os
 import glob
 
@@ -8,6 +8,7 @@ import pydicom
 
 from matplotlib import cm
 from matplotlib import pyplot as plt
+
 
 from keras.models import Model
 from keras.layers import Input
@@ -22,6 +23,10 @@ from tqdm import tqdm_notebook
 import sys
 
 from mask_functions import rle2mask
+
+import warnings
+warnings.filterwarnings("ignore")
+
 def show_dcm_info(dataset):
     print("Filename.........:", file_path)
     print("Storage type.....:", dataset.SOPClassUID)
@@ -113,8 +118,11 @@ for n, _id in tqdm_notebook(enumerate(train_fns), total=len(train_fns)):
                 Y_train[n] = np.expand_dims(rle2mask(df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels'], 1024, 1024), axis=2)
             else:
                 Y_train[n] = np.zeros((1024, 1024, 1))
-                for x in df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels']:
-                    Y_train[n] =  Y_train[n] + np.expand_dims(rle2mask(x, 1024, 1024), axis=2)
+                for x in (df_full.loc[_id.split('/')[1].split('\\')[-1][:-4],' EncodedPixels']):
+                	print([_id.split('/')[1].split('\\')[-1][:-4]])
+                	print(x)
+                	print(n)
+                	Y_train[n] =  Y_train[n] + np.expand_dims(rle2mask(x, 1024, 1024), axis=2)
     except KeyError:
         print(f"Key {str} without mask, assuming healthy patient.")
         Y_train[n] = np.zeros((1024, 1024, 1)) # Assume missing masks are empty masks.
