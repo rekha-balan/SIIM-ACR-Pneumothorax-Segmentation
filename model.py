@@ -15,12 +15,12 @@ from matplotlib import pyplot as plt
 
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 
-
+import keras
 
 from keras.models import Model
-from keras.layers import Input
+from keras.layers import Input, Dense
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
-from keras.layers.pooling import MaxPooling2D
+from keras.layers.pooling import MaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import concatenate
 from tensorflow.keras import backend as K
 
@@ -98,8 +98,8 @@ for q, file_path in enumerate(glob.glob('sample images/*.dcm')[start:start+num_i
 
 train_glob = 'pneumothorax/dicom-images-train/*/*/*.dcm'
 test_glob = 'pneumothorax/dicom-images-test/*/*/*.dcm'
-train_fns = sorted(glob.glob(train_glob))[:500]
-test_fns = sorted(glob.glob(test_glob))[:500]
+train_fns = sorted(glob.glob(train_glob))[:5000]
+test_fns = sorted(glob.glob(test_glob))[:5000]
 df_full = pd.read_csv('pneumothorax/train-rle.csv', index_col='ImageId')
 
 
@@ -203,4 +203,4 @@ model = Model(inputs=[inputs], outputs=[outputs])
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=[dice_coef])
 model.summary()
 
-model.fit(X_train, Y_train, validation_split=.2, batch_size=512, epochs=30)
+model.fit(X_train, Y_train, validation_split=.2, batch_size=100, epochs=30)
